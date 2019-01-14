@@ -1,6 +1,13 @@
 import React, { Component } from 'react';
 import './App.css';
 
+const largeColumn = { width: '40%',
+};
+const midColumn = { width: '30%',
+};
+const smallColumn = { width: '10%',
+};
+
 const list = [
   {
     title: 'React',
@@ -48,17 +55,21 @@ class App extends Component {
      this.setState({ searchTerm: event.target.value});
   }
 
+
+
   render() {
     //ES6
     const { searchTerm, list} = this.state;
     return (
-      <div className="App">
+      <div className="page">
       {/* Split Up Components */}
+        <div className="interactions">
       <Search 
         value={searchTerm}
         onChange={this.onSearchChange}
       >Search
       </Search>
+      </div>
       <Table 
         list={list}
         pattern={searchTerm}
@@ -112,20 +123,21 @@ class Table extends Component{
   render(){
     const {list,pattern,onDismiss} = this.props;
     return(
-      <div>
+      <div className="table">
         { list.filter(isSearched(pattern)).map(item => 
-         <div key={item.objectID}> 
-              <span>
+         <div key={item.objectID} className="table-row"> 
+              <span style={largeColumn}>
                 <a href={item.url}>{item.title}</a>
               </span>
-              <span>{item.author}</span>
-              <span>{item.num_comments}</span>
-              <span>{item.points}</span>
-              <span>
-                <button 
+              <span style={midColumn}>{item.author}</span>
+              <span style={smallColumn}>{item.num_comments}</span>
+              <span style={smallColumn}>{item.points}</span>
+              <span style={smallColumn}>
+                <Button 
                 onClick = {() => onDismiss(item.objectID)}
-                type = "button">Dissmiss
-                </button></span>
+                type = "button"
+                className="button-inline">Dissmiss
+                </Button></span>
           </div> 
        )}
       </div>
@@ -134,5 +146,24 @@ class Table extends Component{
   }
 }
 
+class Button extends Component{
+  render(){
+    const{
+      onClick,
+      className = '',
+      children,
+    } = this.props;
+
+    return(
+      <button
+      onClick = {onClick}
+      className = {className}
+      type="button"
+      >
+      {children}
+      </button>
+    );
+  }
+}
 
 export default App;
