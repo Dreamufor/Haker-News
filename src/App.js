@@ -1,6 +1,18 @@
 import React, { Component } from 'react';
 import './App.css';
 
+
+//Fetching Data
+const DEFAULT_QUERY = 'redux';
+
+const PATH_BASE = 'https://hn.algolia.com/api/v1';
+const PATH_SEARCH = '/search';
+const PARAM_SEARCH = 'query=';
+
+
+
+
+
 const largeColumn = { width: '40%',
 };
 const midColumn = { width: '30%',
@@ -34,20 +46,39 @@ class App extends Component {
     super(props);
 
     this.state = {
-      list,
-      searchTerm: '',
+      result:null,
+      searchTerm: DEFAULT_QUERY,
     };
 
+    this.setSearchTopstories = this.setSearchTopstories.bind(this);
+    this.fetchSearchTopstories = this.fetchSearchTopstories.bind(this);
     this.onSearchChange = this.onSearchChange.bind(this);
     this.onDismiss = this.onDismiss.bind(this);
    
   }
 
+  setSearchTopstories(result){
+    this.setState({result});
+  }
+
+  fetchSearchTopstories(searchTerm){
+    fetch(`${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${searchTerm}`)
+      .then(response => response.json())
+      .then(result => this.setSearchTopstories(result));
+  }
+
+  componentDidMount(){
+    const { searchTerm } = this.state;
+    this.fetchSearchTopstories(searchTerm);
+  }
+
   onDismiss(id){
 
     const isNotId = item => item.objectID !== id;
-    const updatedList = this.state.list.filter(isNotId); 
-    this.setState({ list: updatedList });
+    const updatedHits = this.state.result.hits.filter(isNotId); 
+    this.setState({
+      result: Object.assign({}, this.state.result, {hits:updatedHits})
+    });
 
   }
 
@@ -59,7 +90,8 @@ class App extends Component {
 
   render() {
     //ES6
-    const { searchTerm, list} = this.state;
+    const { searchTerm, result} = this.state;
+    if(!result) {return null;}
     return (
       <div className="page">
       {/* Split Up Components */}
@@ -71,7 +103,7 @@ class App extends Component {
       </Search>
       </div>
       <Table 
-        list={list}
+        list={result.hits}
         pattern={searchTerm}
         onDismiss={this.onDismiss}
       />
