@@ -4,10 +4,13 @@ import './App.css';
 
 //Fetching Data
 const DEFAULT_QUERY = 'redux';
+const DEFAULT_HPP = '100';
 
 const PATH_BASE = 'https://hn.algolia.com/api/v1';
 const PATH_SEARCH = '/search';
 const PARAM_SEARCH = 'query=';
+const PARAM_PAGE = 'page=';
+const PARAM_HPP = 'hitsPerPage=';
 
 
 
@@ -20,26 +23,26 @@ const midColumn = { width: '30%',
 const smallColumn = { width: '10%',
 };
 
-const list = [
-  {
-    title: 'React',
-    url: 'https://facebook.github.io/react/',
-    author: 'Jordan Walke',
-    num_comments: 3,
-    points: 4,
-    objectID: 0,
-},
-{
-    title: 'Redux',
-    url: 'https://github.com/reactjs/redux',
-    author: 'Dan Abramov, Andrew Clark',
-    num_comments: 2,
-    points: 5,
-    objectID: 1,
-},
- ];
- const isSearched = (searchTerm) => (item) =>
- !searchTerm || item.title.toLowerCase().includes(searchTerm.toLowerCase());
+// const list = [
+//   {
+//     title: 'React',
+//     url: 'https://facebook.github.io/react/',
+//     author: 'Jordan Walke',
+//     num_comments: 3,
+//     points: 4,
+//     objectID: 0,
+// },
+// {
+//     title: 'Redux',
+//     url: 'https://github.com/reactjs/redux',
+//     author: 'Dan Abramov, Andrew Clark',
+//     num_comments: 2,
+//     points: 5,
+//     objectID: 1,
+// },
+//  ];
+//  const isSearched = (searchTerm) => (item) =>
+//  !searchTerm || item.title.toLowerCase().includes(searchTerm.toLowerCase());
 
 class App extends Component {
   constructor(props){
@@ -53,16 +56,34 @@ class App extends Component {
     this.setSearchTopstories = this.setSearchTopstories.bind(this);
     this.fetchSearchTopstories = this.fetchSearchTopstories.bind(this);
     this.onSearchChange = this.onSearchChange.bind(this);
+    this.onSearchSubmit = this.onSearchSubmit.bind(this);
     this.onDismiss = this.onDismiss.bind(this);
    
   }
 
-  setSearchTopstories(result){
-    this.setState({result});
+  onSearchSubmit(event){
+    const {searchTerm} = this.state;
+    this.fetchSearchTopstories(searchTerm);
+    event.preventDefault();
   }
 
-  fetchSearchTopstories(searchTerm){
-    fetch(`${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${searchTerm}`)
+  setSearchTopstories(result){
+    const {hits, page } = result;
+    const oldHits = page !== 0
+      ? this.state.result.hits
+      : [];
+    
+    const updatedHits = [
+      ...oldHits,
+      ...hits
+    ];
+
+    this.setState({
+      result:{hits: updatedHits,page}});
+  }
+
+  fetchSearchTopstories(searchTerm,page=0){
+    fetch(`${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${searchTerm}&${PARAM_PAGE}${page}&${PARAM_HPP}${DEFAULT_HPP}`)
       .then(response => response.json())
       .then(result => this.setSearchTopstories(result));
   }
@@ -86,11 +107,10 @@ class App extends Component {
      this.setState({ searchTerm: event.target.value});
   }
 
-
-
   render() {
     //ES6
     const { searchTerm, result} = this.state;
+    const page = (result && result.page) || 0;
     if(!result) {return null;}
     return (
       <div className="page">
@@ -99,14 +119,21 @@ class App extends Component {
       <Search 
         value={searchTerm}
         onChange={this.onSearchChange}
+        onSubmit={this.onSearchSubmit}
       >Search
       </Search>
       </div>
-      <Table 
+      {
+        result &&
+        <Table 
         list={result.hits}
-        pattern={searchTerm}
         onDismiss={this.onDismiss}
       />
+      }
+      <div className="interactions">
+      <Button onClick={() => this.fetchSearchTopstories(searchTerm,page+1)}>
+      More
+        </Button></div>
 
       {/* <form>
         <input 
@@ -137,15 +164,18 @@ class App extends Component {
 
 class Search extends Component {
   render(){
-    const {value, onChange, children} = this.props;
+    const {value, onChange, onSubmit, children} = this.props;
     return (
-      <form>
-        {children}
+      <form onSubmit={onSubmit}>
+        
         <input 
           type="text" 
           value={value}
           onChange={onChange}
           />
+          <button type="submit">
+          {children}
+          </button>
       </form>
     );
   }
@@ -153,10 +183,10 @@ class Search extends Component {
 
 class Table extends Component{
   render(){
-    const {list,pattern,onDismiss} = this.props;
+    const {list,onDismiss} = this.props;
     return(
       <div className="table">
-        { list.filter(isSearched(pattern)).map(item => 
+        { list.map(item => 
          <div key={item.objectID} className="table-row"> 
               <span style={largeColumn}>
                 <a href={item.url}>{item.title}</a>
